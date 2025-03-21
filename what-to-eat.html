@@ -1,169 +1,513 @@
-
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <title>決定吃什麼</title>
-    <style>
-        body { font-family: "Noto Sans TC", sans-serif; padding: 20px; background: #fffefc; color: #333; }
-        h1 { font-size: 28px; }
-        .question { margin-top: 30px; }
-        .options button { display: block; margin: 10px 0; padding: 10px 15px; width: 100%; font-size: 16px; }
-        #result { margin-top: 40px; padding: 20px; border-top: 2px solid #ccc; }
-        .hidden { display: none; }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>吃飯人格測驗</title>
+  <style>
+    body { font-family: sans-serif; line-height: 1.6; margin: 20px; }
+    #quiz-container { max-width: 600px; margin: auto; }
+    h1 { font-size: 1.5em; color: #333; }
+    .question-number { font-weight: bold; margin-top: 1em; }
+    .question-text { margin: 0.5em 0 1em 0; }
+    .option-button { display: block; width: 100%; padding: 10px; margin: 0.3em 0; text-align: left;
+                     background: #f5f5f5; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
+    .option-button:hover { background: #e8e8e8; }
+    #result-container { display: none; }
+    #result-container h2 { font-size: 1.4em; color: #007BFF; margin-top: 0; }
+    #result-container p { margin: 0.5em 0; }
+    #restart-btn { margin-top: 1em; padding: 10px 15px; font-size: 1em; }
+  </style>
 </head>
 <body>
+<div id="quiz-container">
+  <h1>吃飯人格測驗</h1>
+  <div id="intro">
+    <p>透過幾道有趣的日常情境題，來了解你的「吃飯人格」！本測驗將從約30道題庫中隨機抽取8題，請選出最符合你日常反應的選項。</p>
+    <button id="start-btn" onclick="startQuiz()">開始測驗</button>
+  </div>
 
-<h1>決定吃什麼</h1>
-<p>直覺選擇最符合你的選項，看看今天你是哪種飢餓人格！</p>
+  <div id="question-container" style="display:none;">
+    <div class="question-number" id="q-number"></div>
+    <div class="question-text" id="q-text"></div>
+    <div id="options"></div>
+  </div>
 
-<div id="quiz"></div>
-<div id="result" class="hidden"></div>
+  <div id="result-container">
+    <h2 id="result-title"></h2>
+    <p id="result-quote"></p>
+    <p><strong>食物風格：</strong><span id="result-style"></span></p>
+    <p><strong>推薦料理：</strong><span id="result-recommend"></span></p>
+    <p><strong>建議：</strong><span id="result-suggestion"></span></p>
+    <button id="restart-btn" onclick="startQuiz()">重新開始</button>
+  </div>
+</div>
 
 <script>
-    const fullQuestions = [
-        {
-            q: "你出門旅遊時最重視什麼？",
-            options: ["行程安排精準", "自由自在沒壓力", "吃好吃的", "能好好放空"],
-            values: ["規劃", "隨性", "享樂", "療癒"]
-        },
-        {
-            q: "遇到壓力你通常怎麼處理？",
-            options: ["運動發洩", "找人聊聊", "自己靜靜", "大吃一頓"],
-            values: ["行動", "社交", "內化", "食物療癒"]
-        },
-        {
-            q: "你走進餐廳最先注意什麼？",
-            options: ["香味", "氣氛", "人多不多", "價錢"],
-            values: ["感官", "氣氛", "效率", "實際"]
-        },
-        {
-            q: "你喜歡的週末早晨是什麼樣？",
-            options: ["一早起床安排活動", "慢慢醒來看要幹嘛", "躺床耍廢", "準備好早餐好好吃"],
-            values: ["行動", "隨性", "懶人", "溫暖"]
-        },
-        {
-            q: "你覺得一頓「完美的飯」應該？",
-            options: ["吃得飽", "吃得巧", "吃得快", "吃得有故事"],
-            values: ["飽足", "精緻", "效率", "情感"]
-        },
-        {
-            q: "當你一個人吃飯時，你希望？",
-            options: ["快速解決", "配手機滑一下", "找安靜的地方", "也想點點好料寵愛自己"],
-            values: ["效率", "習慣", "安靜", "享樂"]
-        },
-        {
-            q: "你對「吃」的態度比較像是？",
-            options: ["生存需求", "慰藉與安慰", "探索與冒險", "生活的小確幸"],
-            values: ["實際", "療癒", "冒險", "感性"]
-        },
-        {
-            q: "下列哪句話你最有感？",
-            options: ["吃飽才能有力氣過日子", "美食能安撫一切壞心情", "吃飯是一種人生態度", "吃，是生活的英雄主義"],
-            values: ["飽足", "療癒", "哲學", "中二"]
-        },
-        {
-            q: "當朋友問你『要吃什麼』你會？",
-            options: ["秒決定", "先看天氣再說", "不然你決定", "隨便但我不想吃連鎖"],
-            values: ["快狠", "感受派", "隨和", "靈魂派"]
-        },
-        {
-            q: "你在新城市旅行第一件事會是？",
-            options: ["先找地標", "Google 評價最好餐廳", "隨便走走遇到什麼吃什麼", "買零食邊逛邊吃"],
-            values: ["規劃", "美食雷達", "冒險", "吃貨"]
-        }
-    ];
+// 六項心理維度: energy(能量), rhythm(節奏), taste(味覺), social(社交), emotion(情緒), adventure(冒險)
 
-    const personalityMap = {
-        "療癒": {
-            name: "療癒系 · 心靈補品派",
-            quote: "「世界太累，至少要吃飽。」",
-            foods: ["焗烤千層麵", "味噌燉牛肉飯", "親子丼"]
-        },
-        "冒險": {
-            name: "冒險系 · 吃的路上沒在怕",
-            quote: "「未知的食物裡，藏著今日的靈魂。」",
-            foods: ["韓式部隊鍋", "異國咖哩飯", "麻辣燙"]
-        },
-        "效率": {
-            name: "效率系 · 快狠準吃貨",
-            quote: "「不囉嗦，10 分鐘內搞定一切。」",
-            foods: ["牛肉炒飯", "鐵板豬排蓋飯", "燒肉便當"]
-        },
-        "感性": {
-            name: "感性系 · 儀式感吃飯派",
-            quote: "「吃，不只是生存，是一場感情交流。」",
-            foods: ["日式定食", "小火鍋", "炊飯套餐"]
-        }
-    };
+// 題庫設計：約30題，每題4個選項，各選項對應六維度分數
+const questions = [
+  { // 1
+    text: "清晨剛起床，你對早餐的態度是？",
+    options: [
+      { text: "快出門要緊，早餐常常隨便應付或直接略過。", scores: [0, 0, 0, 0, 0, 0] }, 
+      { text: "一定要吃，通常吃得簡單健康，開啟一天。", scores: [1, 2, 0, 0, 0, 0] },
+      { text: "早餐要豐盛，有力氣才開始一天，會花時間好好吃。", scores: [2, 2, 1, 0, 0, 0] },
+      { text: "喜歡換花樣，今天中式燒餅，明天西式三明治，每天不同才有趣。", scores: [1, 0, 1, 0, 0, 2] }
+    ]
+  },
+  { // 2
+    text: "工作日午餐時間到了，但你手邊還有事情沒做完，你會？",
+    options: [
+      { text: "匆匆買個三明治邊做邊吃，效率最重要。", scores: [1, 0, 0, 0, 0, 0] },
+      { text: "等把工作告一段落，再慢慢享用午餐，不能委屈自己的胃。", scores: [1, 1, 1, 0, 1, 0] },
+      { text: "叫上同事一起去附近吃頓豐盛大餐，順便放鬆心情。", scores: [2, 0, 1, 2, 1, 0] },
+      { text: "直接點外賣新的料理嘗試，一邊工作一邊等美食送上門。", scores: [1, 0, 1, 0, 0, 2] }
+    ]
+  },
+  { // 3
+    text: "下班回到家，又累又餓，你會如何解決晚餐？",
+    options: [
+      { text: "簡單泡個麵或打開冰箱有什麼吃什麼，填飽肚子最重要。", scores: [2, 0, 0, 0, 0, 0] },
+      { text: "出去大吃一頓犒勞自己，點自己愛吃的菜，好好享受。", scores: [2, 0, 2, 0, 2, 0] },
+      { text: "打電話約朋友一起吃飯，順便聊聊今天的心情。", scores: [1, 0, 0, 2, 1, 0] },
+      { text: "看看有沒有新開的餐廳或外送，換個口味提振精神。", scores: [1, 0, 1, 0, 1, 2] }
+    ]
+  },
+  { // 4
+    text: "週末中午你沒有特別計畫，肚子餓了，你會？",
+    options: [
+      { text: "打開外送App，選一家平常常點的店，輕松搞定午餐。", scores: [1, 1, 1, 0, 0, 0] },
+      { text: "難得有空，親自下廚做道拿手菜，健康又有成就感。", scores: [1, 1, 0, 0, 1, 0] },
+      { text: "傳訊息問朋友們要不要一起去吃網路上很紅的那家新餐廳。", scores: [1, 0, 1, 2, 1, 2] },
+      { text: "開車隨意晃晃，看到哪家感覺不錯就進去吃。", scores: [1, 0, 0, 0, 0, 2] }
+    ]
+  },
+  { // 5
+    text: "朋友說新開了一家異國料理餐廳，邀請你嘗鮮，你會？",
+    options: [
+      { text: "超期待！馬上答應，一起去體驗異國風味。", scores: [1, 0, 1, 2, 0, 2] },
+      { text: "可以啊，不過我可能會先找找有沒有菜單上比較習慣的菜色。", scores: [1, 0, 0, 2, 1, 1] },
+      { text: "不好意思我可能不敢嘗試，約去吃其他熟悉的料理可以嗎？", scores: [1, 0, 0, 1, 0, 0] },
+      { text: "答應一起去，但會先吃點東西墊肚子，以防吃不習慣。", scores: [2, 1, 0, 2, 0, 1] }
+    ]
+  },
+  { // 6
+    text: "想像你在一個自助餐吃到飽餐廳，面對琳瑯滿目的菜色，你會怎麼拿？",
+    options: [
+      { text: "先拿自己最愛吃的菜色，多拿幾盤，不然等下吃飽就可惜了。", scores: [2, 0, 2, 0, 0, 0] },
+      { text: "每樣都先試一點點，慢慢品嚐，確保能吃到所有想吃的。", scores: [1, 2, 1, 0, 0, 2] },
+      { text: "按照順序來：先沙拉開胃，再主菜，最後甜點，吃飯也要有節奏。", scores: [1, 2, 0, 0, 0, 0] },
+      { text: "拉著朋友一起去拿食物，邊夾菜邊交流推薦好吃的。", scores: [1, 0, 1, 2, 0, 1] }
+    ]
+  },
+  { // 7
+    text: "朋友點了一道超辣的菜請你嘗試，你會？",
+    options: [
+      { text: "當然要挑戰！辣得過癮才有趣。", scores: [0, 0, 2, 0, 0, 2] },
+      { text: "試一小口看看，能接受就繼續吃，太辣就算了。", scores: [0, 0, 1, 0, 0, 1] },
+      { text: "不好意思我不太能吃辣，還是讓給別人吧。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "接過來加點白飯一起吃，中和一下辣味就剛剛好。", scores: [1, 1, 1, 0, 0, 1] }
+    ]
+  },
+  { // 8
+    text: "出國旅行時，你對嘗試當地美食的態度是？",
+    options: [
+      { text: "一定要！大街小巷的小吃全都想嚐一遍！", scores: [1, 0, 1, 0, 0, 2] },
+      { text: "有興趣，但會挑看起來比較乾淨或有名的吃，安全最重要。", scores: [1, 1, 0, 0, 0, 1] },
+      { text: "吃東西不是重點，主要還是觀光景點為主，簡單吃飽就好。", scores: [1, 0, 0, 0, 0, 0] },
+      { text: "若有當地朋友推薦才敢吃，不然怕踩雷。", scores: [0, 0, 0, 1, 0, 0] }
+    ]
+  },
+  { // 9
+    text: "如果你和一群朋友聚餐，但是大家對吃什麼意見不一，你會怎麼做？",
+    options: [
+      { text: "主動提出幾個自己的推薦，帶領大家做決定。", scores: [0, 0, 1, 2, 0, 1] },
+      { text: "隨和配合，大家決定什麼都可以，我都好。", scores: [0, 0, 0, 2, 0, 0] },
+      { text: "提議選擇可以分享多樣菜色的餐廳，這樣每個人都能吃到喜歡的。", scores: [1, 1, 1, 2, 0, 1] },
+      { text: "乾脆各點各的，各吃各的，省得麻煩。", scores: [1, 0, 0, 0, 0, 0] }
+    ]
+  },
+  { // 10
+    text: "半夜突然肚子餓想吃宵夜，但明早要早起，你會？",
+    options: [
+      { text: "算了，忍一下，為了明天精神好，喝水填一填就睡吧。", scores: [0, 2, 0, 0, 0, 0] },
+      { text: "叫份鹹酥雞，不然怎麼睡得著。", scores: [2, 0, 2, 0, 2, 0] },
+      { text: "煮個燕麥牛奶或吃根香蕉，健康又不會太負擔。", scores: [1, 1, 0, 0, 0, 0] },
+      { text: "打開外送App找有沒有24小時營業的特別美食，人生難得宵夜一次。", scores: [1, 0, 1, 0, 1, 2] }
+    ]
+  },
+  { // 11
+    text: "你在網路上看到一道很吸引人的新食譜影片，你會？",
+    options: [
+      { text: "馬上存下來週末就試做，看起來好好吃！", scores: [1, 1, 1, 0, 1, 2] },
+      { text: "覺得不錯，但可能沒時間做，看看就好。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "分享給愛下廚的朋友，希望下次去他家時能一起試試。", scores: [0, 0, 0, 2, 0, 1] },
+      { text: "看起來太複雜了，而且材料特殊，我還是煮我慣用的菜譜就好。", scores: [0, 2, 0, 0, 0, 0] }
+    ]
+  },
+  { // 12
+    text: "心情不好時，你通常會選擇以下哪種方式面對？",
+    options: [
+      { text: "大吃一頓犒勞自己，用美食來療癒心情。", scores: [2, 0, 1, 0, 2, 0] },
+      { text: "沒有胃口，常常隨便吃一點甚至不吃。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "找朋友聊聊，順便一起吃些輕鬆的小點心排解心情。", scores: [1, 0, 0, 2, 1, 0] },
+      { text: "轉移注意力去運動或其他事，不太會用吃的解決情緒。", scores: [0, 0, 0, 0, 0, 0] }
+    ]
+  },
+  { // 13
+    text: "假日時，有人建議去高檔餐廳體驗一道昂貴的套餐，你的反應是？",
+    options: [
+      { text: "好啊！偶爾體驗一下美食藝術，價格高也值得。", scores: [0, 0, 2, 1, 0, 1] },
+      { text: "太貴了吧？吃個便宜又好吃的小吃不是很好嗎？", scores: [1, 0, 1, 0, 0, 0] },
+      { text: "會有點猶豫，但如果朋友們都想去，我就跟著去，享受氣氛。", scores: [0, 0, 1, 2, 0, 0] },
+      { text: "高檔餐廳壓力好大，還是算了，我比較喜歡輕鬆自在的用餐環境。", scores: [0, 0, 0, 0, 0, 0] }
+    ]
+  },
+  { // 14
+    text: "對於明天的三餐，你通常是？",
+    options: [
+      { text: "前一天就想好要吃什麼，甚至先準備好食材或便當。", scores: [1, 2, 0, 0, 0, 0] },
+      { text: "大概有個想法，但也會看當天情況靈活調整。", scores: [1, 1, 0, 0, 0, 1] },
+      { text: "完全沒計畫，走到哪餓了再說，吃什麼看當下心情決定。", scores: [1, 0, 0, 0, 1, 2] },
+      { text: "固定時間固定餐點，幾乎每天都吃差不多的東西。", scores: [1, 2, 0, 0, 0, 0] }
+    ]
+  },
+  { // 15
+    text: "發薪日到了，你會如何犒賞自己的胃？",
+    options: [
+      { text: "去吃平常捨不得的高級餐廳，慰勞努力工作的自己。", scores: [0, 0, 2, 0, 2, 1] },
+      { text: "約朋友去聚餐，好好享受美食和友誼的時光。", scores: [1, 0, 1, 2, 1, 0] },
+      { text: "其實不會特別花大錢吃好料，領薪日跟平常一樣簡單吃即可。", scores: [0, 2, 0, 0, 0, 0] },
+      { text: "買一些喜歡的食材，週末在家給自己來個豐盛大餐。", scores: [2, 1, 1, 0, 2, 0] }
+    ]
+  },
+  { // 16
+    text: "在餐廳吃不完的情況下，你通常會？",
+    options: [
+      { text: "打包帶走，下一餐繼續享用，物盡其用。", scores: [1, 1, 0, 0, 1, 0] },
+      { text: "勉強再吃幾口，盡量吃完，不想留下食物。", scores: [2, 0, 0, 0, 1, 0] },
+      { text: "吃不完就算了，留在桌上吧，不帶走。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "看看同桌有人要不要一起分掉或帶回家，分享一下。", scores: [0, 0, 0, 2, 1, 0] }
+    ]
+  },
+  { // 17
+    text: "有沒有一種食物是你無論何時想到都會很想吃的？",
+    options: [
+      { text: "有！而且常常想了就立刻去買來吃，無法抵擋誘惑。", scores: [2, 0, 2, 0, 2, 0] },
+      { text: "有幾樣最愛的菜，但我會忍住不會馬上去吃，控制一下頻率。", scores: [1, 1, 1, 0, 1, 0] },
+      { text: "沒有特別狂熱的食物，想到什麼吃什麼，沒有執著。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "偏愛某些味道，但也不會天天吃，喜歡偶爾品嚐才珍貴。", scores: [0, 1, 1, 0, 1, 0] }
+    ]
+  },
+  { // 18
+    text: "說到做菜/煮飯，你是哪一種？",
+    options: [
+      { text: "幾乎不下廚，能叫外賣就絕不自己煮。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "偶爾下廚，有興致時會研究新食譜試試看。", scores: [1, 0, 1, 0, 1, 1] },
+      { text: "常常自己煮，而且有固定拿手菜，吃得安心又健康。", scores: [1, 2, 0, 0, 1, 0] },
+      { text: "每天做菜都是即興創作，看到什麼食材有靈感就煮什麼。", scores: [1, 0, 1, 0, 1, 2] }
+    ]
+  },
+  { // 19
+    text: "你吃飯的速度通常怎麼樣？",
+    options: [
+      { text: "超快，常常別人還沒吃一半我就吃完了。", scores: [1, 0, 0, 0, 0, 0] },
+      { text: "偏快，可能習慣趕時間，但還是會留意味道。", scores: [1, 0, 1, 0, 0, 0] },
+      { text: "不快不慢，正常速度，享受用餐但也不拖時間。", scores: [0, 1, 1, 0, 0, 0] },
+      { text: "很慢，吃飯就是要細細品嚐，每一口都不馬虎。", scores: [0, 2, 2, 0, 0, 0] }
+    ]
+  },
+  { // 20
+    text: "下列哪一句比較符合你的習慣？",
+    options: [
+      { text: "常常忙起來就忘記吃飯，或乾脆不吃也沒差。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "一天不吃正餐會受不了，再忙也一定要抽時間吃飯。", scores: [2, 1, 0, 0, 0, 0] },
+      { text: "有時忙忘了吃，但事後一定會找機會補回來。", scores: [2, 1, 0, 0, 0, 0] },
+      { text: "吃飯時間就是休息調整，不會犧牲用餐時間去工作。", scores: [1, 2, 0, 0, 1, 0] }
+    ]
+  },
+  { // 21
+    text: "最近網路上有款很夯的網紅美食，你會？",
+    options: [
+      { text: "趁熱潮趕快去排隊嘗鮮，親自體驗看看有多厲害。", scores: [1, 0, 1, 1, 0, 2] },
+      { text: "有機會再說，不會特地去排隊，人擠人為了吃不值得。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "完全沒興趣，網紅美食通常只是噱頭，吃自己喜歡的就好。", scores: [1, 0, 1, 0, 0, 0] },
+      { text: "等風頭過了再去，不用排隊，也能看評價再決定吃不吃。", scores: [0, 1, 0, 0, 0, 1] }
+    ]
+  },
+  { // 22
+    text: "下班準備回家時，朋友臨時約你去嘗試一家新餐廳，但你本來打算回家隨便吃，這時你會？",
+    options: [
+      { text: "改變計畫就改變吧，難得朋友邀約，去試試新餐廳！", scores: [1, 0, 1, 2, 0, 2] },
+      { text: "有點累但還是去了，想陪朋友也不想錯過新餐廳，但心裡擔心明天會不會很累。", scores: [1, 0, 1, 2, 1, 1] },
+      { text: "婉拒朋友，今天實在累了，改天有空再約吧。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "邀朋友改成外帶回家吃，既能嘗鮮又不用太累還能一起分享。", scores: [1, 1, 1, 2, 1, 1] }
+    ]
+  },
+  { // 23
+    text: "你對於用餐環境/氣氛的要求是？",
+    options: [
+      { text: "越熱鬧越好，喜歡人聲鼎沸的感覺，很有活力。", scores: [1, 0, 0, 2, 0, 0] },
+      { text: "喜歡有格調又安靜的餐廳，享受沉靜的美食時光。", scores: [0, 0, 2, 0, 0, 0] },
+      { text: "只要乾淨明亮就好，環境不用特別，有位子坐就行。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "愛嘗試各種不同風格的餐廳，氣氛多變才有趣。", scores: [0, 0, 0, 0, 0, 2] }
+    ]
+  },
+  { // 24
+    text: "餐後甜點對你來說是？",
+    options: [
+      { text: "必要的！餐後一定要來點甜的才完美。", scores: [1, 0, 2, 0, 2, 0] },
+      { text: "偶爾，看情況和胃容量，如果很飽就不會硬吃。", scores: [0, 0, 1, 0, 0, 0] },
+      { text: "可有可無，我不是很愛甜食，吃不吃無所謂。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "比較喜歡鹹的或水果代替甜點，覺得太甜容易膩。", scores: [0, 0, 0, 0, 0, 0] }
+    ]
+  },
+  { // 25
+    text: "以下哪種描述較符合你的外食頻率？",
+    options: [
+      { text: "幾乎天天外食，很少自己開火。", scores: [0, 0, 1, 1, 0, 1] },
+      { text: "一週幾次外食，大多是週末或特殊場合，平日盡量在家吃。", scores: [0, 1, 1, 1, 0, 0] },
+      { text: "很少外食，除非必要或聚會，大部分時間都在家吃。", scores: [0, 2, 0, 0, 0, 0] },
+      { text: "頻率不定，看心情和需求，有時連續外食，有時宅在家吃泡麵。", scores: [1, 0, 0, 0, 1, 1] }
+    ]
+  },
+  { // 26
+    text: "說到採買食材或囤零食，你的做法比較像？",
+    options: [
+      { text: "定期採買計畫周詳，事先想好要吃什麼再準備。", scores: [0, 2, 0, 0, 0, 0] },
+      { text: "看到特價或喜歡的就買，冰箱零食櫃永遠有存貨，但有時會忘記吃。", scores: [0, 0, 1, 0, 0, 1] },
+      { text: "很少特地買零食或囤食材，通常想吃才會去買。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "購買新奇食材或零食很有樂趣，喜歡試不同品牌口味。", scores: [0, 0, 2, 0, 0, 2] }
+    ]
+  },
+  { // 27
+    text: "如果要選一種料理作為你一輩子主要吃的，你會選？",
+    options: [
+      { text: "我有特定最愛，一種料理也可以吃一輩子都不膩。", scores: [1, 1, 2, 0, 1, 0] },
+      { text: "會選菜色多元的料理，例如中式，選擇多比較不會膩。", scores: [1, 0, 0, 0, 0, 1] },
+      { text: "沒辦法，只吃一種會受不了，我想要各國料理換著吃。", scores: [1, 0, 1, 0, 0, 2] },
+      { text: "選擇清淡均衡的料理，這樣長期吃對健康比較好。", scores: [0, 1, 0, 0, 0, 0] }
+    ]
+  },
+  { // 28
+    text: "對於隔夜菜或剩菜再加熱，你的想法是？",
+    options: [
+      { text: "完全可以接受，只要保存得當，不浪費食物最好。", scores: [0, 1, 0, 0, 1, 0] },
+      { text: "能吃但不太愛，隔夜的味道口感總是差一點，必要時才吃。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "盡量不吃隔夜菜，寧可每餐新鮮現做，味道口感最佳。", scores: [0, 0, 2, 0, 0, 0] },
+      { text: "只吃自己煮的剩菜，外面打包回來的隔夜就算了。", scores: [0, 1, 0, 0, 0, 0] }
+    ]
+  },
+  { // 29
+    text: "一個人去沒去過的餐廳用餐，你覺得？",
+    options: [
+      { text: "沒問題，想吃就去，才不會錯過美食機會。", scores: [1, 0, 1, 0, 0, 2] },
+      { text: "有點害羞，通常會找找有沒有人陪，不太敢自己嘗試新餐廳。", scores: [0, 0, 0, 1, 0, 0] },
+      { text: "從來沒想過自己一個人去新餐廳，吃飯還是要有伴比較好。", scores: [0, 0, 0, 2, 0, 0] },
+      { text: "比較習慣熟悉的店，一個人懶得嘗試新地方。", scores: [1, 2, 0, 0, 0, 0] }
+    ]
+  },
+  { // 30
+    text: "天氣變化會影響你的飲食選擇嗎？",
+    options: [
+      { text: "會！天冷想吃火鍋補身，天熱就想吃冰或清爽的。", scores: [1, 0, 1, 0, 1, 1] },
+      { text: "還好，吃什麼跟天氣沒太大關係，想吃什麼就吃什麼。", scores: [0, 0, 0, 0, 0, 0] },
+      { text: "會順應季節養生，夏天清淡，冬天溫熱。", scores: [0, 1, 0, 0, 0, 0] },
+      { text: "只有在特定節日/季節才會吃應景美食，平常不太受影響。", scores: [0, 0, 0, 0, 1, 0] }
+    ]
+  }
+];
 
-    let selected = [];
-    let current = 0;
-    let scores = {};
-    const quizDiv = document.getElementById("quiz");
-    const resultDiv = document.getElementById("result");
+// 人格結果系統：至少10種吃飯人格類型定義
+const personalities = [
+  { // 熱情冒險家
+    name: "熱情冒險家",
+    quote: "“美食就是冒險的延續！”",
+    style: "喜歡刺激新奇的口味，偏好辣味或異國風情，越有挑戰性的料理越能引起興趣。",
+    recommend: "異國料理、重辣燉鍋、創意融合菜",
+    suggestion: "勇於嘗試菜單上從未點過的菜色，或在旅途中探索當地小吃，每一口都是冒險故事。"
+  },
+  { // 悠閒慢享者
+    name: "悠閒慢享者",
+    quote: "“慢慢品嚐，讓餐桌成為放鬆的儀式。”",
+    style: "偏好溫和清淡的風味，用餐講求氛圍與節奏，不緊不忙地享受每一道料理。",
+    recommend: "清粥小菜、蔬食沙拉、下午茶點",
+    suggestion: "選擇安靜舒適的環境用餐，泡一壺茶配簡單小點，讓用餐過程療癒身心。"
+  },
+  { // 社交分享家
+    name: "社交分享家",
+    quote: "“一道菜的美好，在於與誰共享。”",
+    style: "喜愛分享式的用餐形式，重視聚餐的熱鬧氛圍，美食對你而言也是社交媒介。",
+    recommend: "火鍋、燒烤、Tapas 小盤分享菜",
+    suggestion: "常約三五好友嘗試新餐廳或舉辦家宴，一起點多樣菜色分享，享受人聲鼎沸的歡樂時光。"
+  },
+  { // 獨立美食家
+    name: "獨立美食家",
+    quote: "“一個人也能享受美食的豐盛。”",
+    style: "吃飯喜歡隨心所欲，想吃什麼就吃什麼，不受他人影響。一個人用餐也自在，反而更能專注品味。",
+    recommend: "單人套餐、便當、自煮料理",
+    suggestion: "偶爾帶自己去喜歡的餐廳，點上最想吃的菜，用一頓單人美食慰勞自己，體會獨處的愜意。"
+  },
+  { // 濃郁重口味
+    name: "濃郁重口味",
+    quote: "“沒有重口味，人生哪有滋味！”",
+    style: "偏好濃郁厚重的味道，重油重香或辛辣的料理最能滿足你的味蕾，喜歡那種強烈的滋味衝擊。",
+    recommend: "麻辣火鍋、炭烤燒肉、濃醬咖哩",
+    suggestion: "可以嘗試各地有名的重口味料理，滿足味蕾的刺激。同時注意偶爾讓味覺休息一下，以免過度刺激。"
+  },
+  { // 清淡養生派
+    name: "清淡養生派",
+    quote: "“吃得清爽，身體舒暢。”",
+    style: "喜愛原味天然的食物風格，偏清爽低油，重視健康與營養均衡，飲食選擇上較為節制。",
+    recommend: "清蒸料理、水煮青菜、藜麥沙拉",
+    suggestion: "繼續保持健康的飲食習慣，多攝取蔬果和原型食物。偶爾也可放鬆嚐點美味小吃，平衡身心的慾望與需求。"
+  },
+  { // 情緒療癒者
+    name: "情緒療癒者",
+    quote: "“心情不好，吃點美食治癒一切。”",
+    style: "飲食深受情緒影響，開心時享受美食慶祝，低落時依賴美食撫慰。偏好能帶來安全感和快樂的料理風格。",
+    recommend: "巧克力蛋糕、奶茶、家常燉湯",
+    suggestion: "當心情低落時，不妨品嚐帶來美好回憶的料理或甜點療癒自己。但也留意適度節制，避免過度依賴飲食調節情緒。"
+  },
+  { // 計畫嚴謹派
+    name: "計畫嚴謹派",
+    quote: "“用餐也要有計畫，井然有序才安心。”",
+    style: "作息規律，喜歡按時按計畫用餐。偏好熟悉的菜色和固定的飲食模式，對飲食有自己的一套安排。",
+    recommend: "每週菜單循環（如週一義大利麵、週二烤雞沙拉）",
+    suggestion: "有計畫地用餐讓你維持健康，不過偶爾也可以嘗試新的料理，給生活增加一點驚喜，不破壞大原則的前提下享受變化。"
+  },
+  { // 創新嚐鮮客
+    name: "創新嚐鮮客",
+    quote: "“對新菜色充滿好奇，每一口都是新發現。”",
+    style: "樂於嚐試各種創新料理，新食材、新菜式都想嘗鮮。飲食對你而言也是探索創意的冒險。",
+    recommend: "分子料理、期間限定菜色、跨界融合菜",
+    suggestion: "保持你的好奇心，繼續發掘新奇的美食體驗。同時也可與朋友分享你的發現，一起享受創新的樂趣。"
+  },
+  { // 傳統懷舊派
+    name: "傳統懷舊派",
+    quote: "“最愛的滋味，還是記憶中的家鄉味。”",
+    style: "鍾情於經典的傳統料理，熟悉的味道帶給你安心與滿足。偏好從小吃到大的家常菜或具有濃厚文化記憶的食物。",
+    recommend: "滷肉飯、牛肉麵、媽媽拿手菜",
+    suggestion: "偶爾重溫記憶中的美味，邀家人一起準備一道傳統料理，共享熟悉的滋味。但也可以試著融入新元素於經典菜色，創造新的回憶。"
+  },
+  { // 高效補給者
+    name: "高效補給者",
+    quote: "“吃飯只是補充體力，簡單快速最實在。”",
+    style: "將吃飯視為填飽肚子的必要流程，講求方便與效率。偏好份量足、取得容易的食物，對於味道精緻度並不挑剔。",
+    recommend: "便利商店飯糰、能量棒、速食套餐",
+    suggestion: "重視效率讓你節省時間，但建議偶爾放慢腳步，好好享受一餐。適時關注營養均衡，確保高效率之餘也顧及健康。"
+  }
+];
 
-    function shuffle(arr) {
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-    }
+// 啟動測驗：隨機挑選若干題目開始作答
+let selectedQuestions = [];
+let currentQuestionIndex = 0;
+let scoreSum = [0, 0, 0, 0, 0, 0]; // 對應六維度的累計分數
 
-    function startQuiz() {
-        shuffle(fullQuestions);
-        selected = fullQuestions.slice(0, 8);
-        current = 0;
-        scores = {};
-        resultDiv.classList.add("hidden");
-        quizDiv.classList.remove("hidden");
-        showQuestion();
-    }
+function startQuiz() {
+  // 初始化狀態
+  scoreSum = [0, 0, 0, 0, 0, 0];
+  currentQuestionIndex = 0;
+  // 隨機選取8題
+  selectedQuestions = shuffleArray(questions).slice(0, 8);
+  // 切換顯示
+  document.getElementById("intro").style.display = "none";
+  document.getElementById("result-container").style.display = "none";
+  document.getElementById("question-container").style.display = "block";
+  showQuestion();
+}
 
-    function showQuestion() {
-        const q = selected[current];
-        quizDiv.innerHTML = `
-            <div class="question">
-                <h2>${q.q}</h2>
-                <div class="options">
-                    ${q.options.map((opt, i) => `<button onclick="select(${i})">${opt}</button>`).join("")}
-                </div>
-            </div>
-        `;
-    }
+// 洗牌函數：用於隨機排序題目
+function shuffleArray(array) {
+  let arr = array.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
-    function select(index) {
-        const value = selected[current].values[index];
-        scores[value] = (scores[value] || 0) + 1;
-        current++;
-        if (current < selected.length) {
-            showQuestion();
-        } else {
-            showResult();
-        }
-    }
+// 顯示當前題目和選項
+function showQuestion() {
+  const qNum = document.getElementById("q-number");
+  const qText = document.getElementById("q-text");
+  const optionsDiv = document.getElementById("options");
+  // 更新題號與題目文字
+  qNum.textContent = `第 ${currentQuestionIndex + 1} 題`;
+  qText.textContent = selectedQuestions[currentQuestionIndex].text;
+  // 清空舊選項
+  optionsDiv.innerHTML = "";
+  // 動態產生選項按鈕
+  selectedQuestions[currentQuestionIndex].options.forEach((opt, idx) => {
+    const btn = document.createElement("button");
+    btn.className = "option-button";
+    btn.textContent = opt.text;
+    btn.onclick = () => selectOption(idx);
+    optionsDiv.appendChild(btn);
+  });
+}
 
-    function showResult() {
-        quizDiv.classList.add("hidden");
-        let topKey = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
-        const result = personalityMap[topKey] || {
-            name: "平衡系 · 雜食萬能派",
-            quote: "「你很會吃，也很難餓到你。」",
-            foods: ["咖哩飯", "炒烏龍麵", "雞腿排"]
-        };
-        resultDiv.innerHTML = `
-            <h2>${result.name}</h2>
-            <p><em>${result.quote}</em></p>
-            <p>推薦料理：</p>
-            <ul>${result.foods.map(f => `<li>${f}</li>`).join("")}</ul>
-            <button onclick="startQuiz()">再測一次</button>
-        `;
-        resultDiv.classList.remove("hidden");
-    }
+// 處理選擇的選項
+function selectOption(optionIndex) {
+  // 累加分數
+  const scores = selectedQuestions[currentQuestionIndex].options[optionIndex].scores;
+  for (let i = 0; i < scoreSum.length; i++) {
+    scoreSum[i] += scores[i];
+  }
+  currentQuestionIndex++;
+  // 若還有下一題則顯示下一題，否則計算結果
+  if (currentQuestionIndex < selectedQuestions.length) {
+    showQuestion();
+  } else {
+    showResult();
+  }
+}
 
-    startQuiz();
+// 根據六維度分數計算人格分類並顯示結果
+function showResult() {
+  // 計算最高的維度指標和次高以識別人格
+  const total = { energy: scoreSum[0], rhythm: scoreSum[1], taste: scoreSum[2], social: scoreSum[3], emotion: scoreSum[4], adventure: scoreSum[5] };
+  // 排序維度分數
+  const sortedDims = Object.keys(total).sort((a, b) => total[b] - total[a]);
+  const topDim = sortedDims[0];
+  const secondDim = sortedDims[1];
+  // 判斷分類
+  let resultType;
+  if ((topDim === "adventure" && secondDim === "energy") || (topDim === "energy" && secondDim === "adventure")) {
+    resultType = "熱情冒險家";
+  } else if (total["taste"] >= 4 && total["emotion"] >= 4 && total["adventure"] < 3) {
+    // 味覺高、情緒高、冒險低 -> 傳統懷舊派
+    resultType = "傳統懷舊派";
+  } else if (topDim === "social") {
+    resultType = "社交分享家";
+  } else if (topDim === "emotion") {
+    resultType = "情緒療癒者";
+  } else if (topDim === "taste") {
+    resultType = "濃郁重口味";
+  } else if (topDim === "adventure") {
+    resultType = "創新嚐鮮客";
+  } else if (topDim === "rhythm") {
+    // 節奏為最高，根據能量高低區分
+    resultType = (total["energy"] < 4 && (total["taste"] >= 2 || total["emotion"] >= 2)) ? "悠閒慢享者" : "計畫嚴謹派";
+  } else if (topDim === "energy") {
+    resultType = "高效補給者";
+  } else {
+    // 預設平衡或未分類情況
+    resultType = "清淡養生派";
+  }
+  // 找出對應的人格物件
+  const persona = personalities.find(p => p.name === resultType);
+  // 顯示結果
+  document.getElementById("question-container").style.display = "none";
+  document.getElementById("result-container").style.display = "block";
+  document.getElementById("result-title").textContent = `你的吃飯人格：${persona.name}`;
+  document.getElementById("result-quote").textContent = persona.quote;
+  document.getElementById("result-style").textContent = persona.style;
+  document.getElementById("result-recommend").textContent = persona.recommend;
+  document.getElementById("result-suggestion").textContent = persona.suggestion;
+}
 </script>
-
 </body>
 </html>
