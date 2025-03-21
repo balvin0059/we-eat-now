@@ -1,0 +1,169 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>決定吃什麼</title>
+    <style>
+        body { font-family: "Noto Sans TC", sans-serif; padding: 20px; background: #fffefc; color: #333; }
+        h1 { font-size: 28px; }
+        .question { margin-top: 30px; }
+        .options button { display: block; margin: 10px 0; padding: 10px 15px; width: 100%; font-size: 16px; }
+        #result { margin-top: 40px; padding: 20px; border-top: 2px solid #ccc; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<h1>決定吃什麼</h1>
+<p>直覺選擇最符合你的選項，看看今天你是哪種飢餓人格！</p>
+
+<div id="quiz"></div>
+<div id="result" class="hidden"></div>
+
+<script>
+    const fullQuestions = [
+        {
+            q: "你出門旅遊時最重視什麼？",
+            options: ["行程安排精準", "自由自在沒壓力", "吃好吃的", "能好好放空"],
+            values: ["規劃", "隨性", "享樂", "療癒"]
+        },
+        {
+            q: "遇到壓力你通常怎麼處理？",
+            options: ["運動發洩", "找人聊聊", "自己靜靜", "大吃一頓"],
+            values: ["行動", "社交", "內化", "食物療癒"]
+        },
+        {
+            q: "你走進餐廳最先注意什麼？",
+            options: ["香味", "氣氛", "人多不多", "價錢"],
+            values: ["感官", "氣氛", "效率", "實際"]
+        },
+        {
+            q: "你喜歡的週末早晨是什麼樣？",
+            options: ["一早起床安排活動", "慢慢醒來看要幹嘛", "躺床耍廢", "準備好早餐好好吃"],
+            values: ["行動", "隨性", "懶人", "溫暖"]
+        },
+        {
+            q: "你覺得一頓「完美的飯」應該？",
+            options: ["吃得飽", "吃得巧", "吃得快", "吃得有故事"],
+            values: ["飽足", "精緻", "效率", "情感"]
+        },
+        {
+            q: "當你一個人吃飯時，你希望？",
+            options: ["快速解決", "配手機滑一下", "找安靜的地方", "也想點點好料寵愛自己"],
+            values: ["效率", "習慣", "安靜", "享樂"]
+        },
+        {
+            q: "你對「吃」的態度比較像是？",
+            options: ["生存需求", "慰藉與安慰", "探索與冒險", "生活的小確幸"],
+            values: ["實際", "療癒", "冒險", "感性"]
+        },
+        {
+            q: "下列哪句話你最有感？",
+            options: ["吃飽才能有力氣過日子", "美食能安撫一切壞心情", "吃飯是一種人生態度", "吃，是生活的英雄主義"],
+            values: ["飽足", "療癒", "哲學", "中二"]
+        },
+        {
+            q: "當朋友問你『要吃什麼』你會？",
+            options: ["秒決定", "先看天氣再說", "不然你決定", "隨便但我不想吃連鎖"],
+            values: ["快狠", "感受派", "隨和", "靈魂派"]
+        },
+        {
+            q: "你在新城市旅行第一件事會是？",
+            options: ["先找地標", "Google 評價最好餐廳", "隨便走走遇到什麼吃什麼", "買零食邊逛邊吃"],
+            values: ["規劃", "美食雷達", "冒險", "吃貨"]
+        }
+    ];
+
+    const personalityMap = {
+        "療癒": {
+            name: "療癒系 · 心靈補品派",
+            quote: "「世界太累，至少要吃飽。」",
+            foods: ["焗烤千層麵", "味噌燉牛肉飯", "親子丼"]
+        },
+        "冒險": {
+            name: "冒險系 · 吃的路上沒在怕",
+            quote: "「未知的食物裡，藏著今日的靈魂。」",
+            foods: ["韓式部隊鍋", "異國咖哩飯", "麻辣燙"]
+        },
+        "效率": {
+            name: "效率系 · 快狠準吃貨",
+            quote: "「不囉嗦，10 分鐘內搞定一切。」",
+            foods: ["牛肉炒飯", "鐵板豬排蓋飯", "燒肉便當"]
+        },
+        "感性": {
+            name: "感性系 · 儀式感吃飯派",
+            quote: "「吃，不只是生存，是一場感情交流。」",
+            foods: ["日式定食", "小火鍋", "炊飯套餐"]
+        }
+    };
+
+    let selected = [];
+    let current = 0;
+    let scores = {};
+    const quizDiv = document.getElementById("quiz");
+    const resultDiv = document.getElementById("result");
+
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+    }
+
+    function startQuiz() {
+        shuffle(fullQuestions);
+        selected = fullQuestions.slice(0, 8);
+        current = 0;
+        scores = {};
+        resultDiv.classList.add("hidden");
+        quizDiv.classList.remove("hidden");
+        showQuestion();
+    }
+
+    function showQuestion() {
+        const q = selected[current];
+        quizDiv.innerHTML = `
+            <div class="question">
+                <h2>${q.q}</h2>
+                <div class="options">
+                    ${q.options.map((opt, i) => `<button onclick="select(${i})">${opt}</button>`).join("")}
+                </div>
+            </div>
+        `;
+    }
+
+    function select(index) {
+        const value = selected[current].values[index];
+        scores[value] = (scores[value] || 0) + 1;
+        current++;
+        if (current < selected.length) {
+            showQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        quizDiv.classList.add("hidden");
+        let topKey = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+        const result = personalityMap[topKey] || {
+            name: "平衡系 · 雜食萬能派",
+            quote: "「你很會吃，也很難餓到你。」",
+            foods: ["咖哩飯", "炒烏龍麵", "雞腿排"]
+        };
+        resultDiv.innerHTML = `
+            <h2>${result.name}</h2>
+            <p><em>${result.quote}</em></p>
+            <p>推薦料理：</p>
+            <ul>${result.foods.map(f => `<li>${f}</li>`).join("")}</ul>
+            <button onclick="startQuiz()">再測一次</button>
+        `;
+        resultDiv.classList.remove("hidden");
+    }
+
+    startQuiz();
+</script>
+
+</body>
+</html>
