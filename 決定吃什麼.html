@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>決定吃什麼</title>
+    <style>
+        body { font-family: "Noto Sans TC", sans-serif; padding: 20px; background: #fffbe7; color: #333; }
+        h1 { font-size: 28px; }
+        .question { margin-top: 30px; }
+        .options button { display: block; margin: 10px 0; padding: 10px 15px; width: 100%; font-size: 16px; }
+        #result { margin-top: 40px; padding: 20px; border-top: 2px solid #ccc; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<h1>決定吃什麼</h1>
+<p>根據你的直覺回答以下問題，我們將分析你今天的「飢餓人格」，並推薦你該吃什麼！</p>
+
+<div id="quiz"></div>
+<div id="result" class="hidden"></div>
+
+<script>
+    const questions = [
+        {
+            q: "Q1. 下班（或放學）後，你最想做的事是？",
+            options: ["躺著耍廢滑手機", "約朋友出去吃東西", "一個人逛街放空", "做運動或走路散步"],
+            values: ["low", "social", "chill", "active"]
+        },
+        {
+            q: "Q2. 如果現在突然下起大雨，你會？",
+            options: ["生氣，心情馬上變差", "有點煩，但沒關係", "覺得浪漫，有點開心", "無感，雨就雨啊～"],
+            values: ["low", "stable", "sensitive", "neutral"]
+        },
+        {
+            q: "Q3. 你選擇電影時偏好哪一種？",
+            options: ["動作爽片 or 喜劇", "溫馨感人的小品", "懸疑推理 or 驚悚片", "藝術片 or 文青類"],
+            values: ["fast", "warm", "think", "aesthetic"]
+        },
+        {
+            q: "Q4. 今天如果可以瞬間移動，你最想去哪？",
+            options: ["日本巷弄吃拉麵", "韓國街頭吃烤肉", "台南夜市大吃小吃", "義大利鄉村吃義大利麵"],
+            values: ["jp", "kr", "tw", "it"]
+        },
+        {
+            q: "Q5. 如果有一整天的空閒，你會？",
+            options: ["安排滿滿的行程", "睡到自然醒再看心情", "找個咖啡廳待一下午", "在家做菜、整理房間"],
+            values: ["active", "lazy", "chill", "home"]
+        },
+        {
+            q: "Q6. 你吃飯時最討厭的是？",
+            options: ["要排隊等太久", "太油太膩", "看起來好吃但普普", "吃不飽或份量太小"],
+            values: ["fast", "light", "quality", "quantity"]
+        }
+    ];
+
+    let current = 0;
+    const scores = {};
+    const quizDiv = document.getElementById("quiz");
+    const resultDiv = document.getElementById("result");
+
+    function showQuestion() {
+        const q = questions[current];
+        quizDiv.innerHTML = `
+            <div class="question">
+                <h2>${q.q}</h2>
+                <div class="options">
+                    ${q.options.map((opt, i) => `<button onclick="select(${i})">${opt}</button>`).join("")}
+                </div>
+            </div>
+        `;
+    }
+
+    function select(index) {
+        const value = questions[current].values[index];
+        scores[value] = (scores[value] || 0) + 1;
+        current++;
+        if (current < questions.length) {
+            showQuestion();
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        quizDiv.classList.add("hidden");
+
+        // 分析邏輯（簡化版）
+        let personality = "";
+        let food = [];
+
+        if ((scores["low"] || 0) >= 2 || (scores["fast"] || 0) >= 2) {
+            personality = "療癒系·即刻滿足派";
+            food = ["焗烤肉醬千層麵", "義式烤雞腿飯", "港式焗豬扒飯"];
+        } else if ((scores["chill"] || 0) >= 2 || (scores["lazy"] || 0) >= 2) {
+            personality = "慢活系·溫溫派";
+            food = ["味噌燉牛肉飯", "家常燉雞腿飯", "親子丼"];
+        } else {
+            personality = "探索系·嚐鮮派";
+            food = ["韓式部隊鍋", "台南牛肉湯", "義大利黑松露燉飯"];
+        }
+
+        resultDiv.classList.remove("hidden");
+        resultDiv.innerHTML = `
+            <h2>你的飢餓人格是：${personality}</h2>
+            <p>我們建議你今天吃以下其中一樣：</p>
+            <ul>${food.map(f => `<li>${f}</li>`).join("")}</ul>
+            <button onclick="restart()">再測一次</button>
+        `;
+    }
+
+    function restart() {
+        current = 0;
+        for (let k in scores) delete scores[k];
+        resultDiv.classList.add("hidden");
+        quizDiv.classList.remove("hidden");
+        showQuestion();
+    }
+
+    showQuestion();
+</script>
+
+</body>
+</html>
